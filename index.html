@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8">
+<style>
+
+text {
+  font: 12px sans-serif;
+}
+
+</style>
+<body>
+<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+<div id="map"></div>
+<script type="text/javascript">
+
+/* data = d3.csv("/data/yelp_data.csv", function(d) {
+	return {
+		sw_longitude: +d.sw_longitude,
+		sw_lattitude: +d.sw_lattitude,
+		ne_longitude: +d.ne_longitude,
+		ne_lattitude: +d.ne_lattitude,
+		box_rating: +d.box_rating
+	};
+}); */
+
+/* var dataset = d3.csv("/data/yelp_data.csv")
+    .row(function(d) { 
+    	return {
+				sw_longitude: +d.sw_longitude,
+				sw_lattitude: +d.sw_lattitude,
+				ne_longitude: +d.ne_longitude,
+				ne_latitude: +d.ne_latitude,
+				box_rating: +d.box_rating
+			};
+		}); */
+
+var map = new google.maps.Map(d3.select("#map").node(), {
+  zoom: 8,
+  center: new google.maps.LatLng(37.75956, -122.43662),
+  mapTypeId: google.maps.MapTypeId.TERRAIN
+});
+
+var sf_sw_lon = -122.518631;
+var sf_sw_lat = 37.70814;
+var sf_ne_lon = -122.363964;
+var sf_ne_lat = 37.811471;
+
+var svgWidth = (sf_ne_lon - sf_sw_lon) * 10000;
+var svgHeight = (sf_ne_lat - sf_sw_lat) * 10000;
+
+var padding = 10;
+
+var xScale = d3.scale.linear()
+	.domain([sf_sw_lon, sf_ne_lon])
+	.range([padding, svgWidth - padding]);
+
+var yScale = d3.scale.linear()
+	.domain([sf_sw_lat, sf_ne_lat])
+	.range([svgHeight - padding, padding * 8]);
+
+var ratingScale = d3.scale.linear()
+	.domain([3, 5])
+	.rangeRound([180, 5]);
+
+	// need to do some sort of scaling for rectangle fill heights and widths too. match the other scales
+
+var svg = d3.select("body")
+    .append("div")
+  	.append("svg")
+  	.attr("width", svgWidth)
+  	.attr("height", svgHeight);
+
+d3.csv("/data/yelp_data.csv", function(data) {
+	data.forEach(function(d) {
+		d.sw_longitude = +d.sw_longitude;
+		d.sw_latitude = +d.sw_latitude;
+		d.ne_longitude = +d.ne_longitude;
+		d.ne_latitude = +d.ne_latitude;
+		d.box_rating = +d.box_rating;
+	});
+
+	svg.selectAll("rect")
+		.data(data)
+		.enter()
+		.append("rect")
+		.attr("x", function(d) {
+			return xScale(d.sw_longitude);
+		})
+		.attr("y", function(d) {
+			return yScale(d.sw_latitude) - (yScale(d.sw_latitude) - yScale(d.ne_latitude));
+		})
+		.attr("height", function(d) {
+			return yScale(d.sw_latitude) - yScale(d.ne_latitude); // backwards (sw - ne) bc yScale is reversed
+		})
+		.attr("width", function(d) {
+			return xScale(d.ne_longitude) - xScale(d.sw_longitude);
+		})
+		.attr("fill", function(d) {
+			return "rgba(215, " + ratingScale(d.box_rating) + ", 10, 1.0)";
+		})
+		.append("svg:title")
+		.text(function(d) {
+			return "(" + d.sw_longitude + ", " + d.sw_latitude + ")";
+		});
+
+	svg.selectAll("text")
+		.data(data)
+		.enter()
+		.append("text")
+		.text(function(d) {
+			return d.box_rating;
+		})
+		.attr("x", function(d) {
+			return xScale(d.sw_longitude);
+		})
+		.attr("y", function(d) {
+			return yScale(d.sw_latitude);
+		});
+});
+
+</script>
+</body>
+</html>
