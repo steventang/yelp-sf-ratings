@@ -1,10 +1,10 @@
 require 'yelp'
 require 'csv'
 
-@client = Yelp::Client.new({ consumer_key: 'atcOW8wzksokuJjV_RDQTw',
-                            consumer_secret: 'zz5t3khY4vQbA5CchwizLzQ7mEo',
-                            token: 'vX0RFFkAOK0Nxy-f8IgfzAuUCAhEPyc2',
-                            token_secret: '93c_gj4GWrNI8__uyMUvqELJlcY'
+@client = Yelp::Client.new({ consumer_key: ENV['YELP_CONSUMER_KEY'],
+                            consumer_secret: ENV['YELP_CONSUMER_SCECRET'],
+                            token: ENV['YELP_TOKEN'],
+                            token_secret: ENV['YELP_TOKEN_SECRET']
                           })
 
 @params = { term: 'restaurant',
