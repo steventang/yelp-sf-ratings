@@ -17,17 +17,17 @@ text {
 var sf_sw_lon = -122.514941;
 var sf_sw_lat = 37.70814;
 var sf_ne_lon = -122.35714;
-var sf_ne_lat = 37.811675;
+var sf_ne_lat = 37.811675
 
 // a 1/1 lon/lat ratio does not translate to a 1/1 width/height ratio on the screen
 // this var translates the lat/lon ratio into a proportional width/height ratio
 var lat_lon_to_pixels = 1.204694 / 1.567296;
 
-var xPadding = 75;
+var xPadding = 85;
 // ypadding must be proportional to xpadding as lat is proportional to long, else the padding skews ratio of svg height and width, and skews the scale
 var yPadding = xPadding / lat_lon_to_pixels * ((sf_ne_lat - sf_sw_lat) / (sf_ne_lon - sf_sw_lon));
 var xShift = 5;
-var yShift = 0;
+var yShift = 5;
 
 // Want my svg to be proportional to actual lat lon sizes.
 var svgWidth = (sf_ne_lon - sf_sw_lon) * lat_lon_to_pixels * 10000;
@@ -70,6 +70,7 @@ d3.csv("/data/yelp_data.csv", function(data) {
 		d.box_rating = +d.box_rating;
 	});
 
+	// Draw the ratings map rectangles
 	svg.selectAll("rect")
 		.data(data)
 		.enter()
@@ -92,35 +93,67 @@ d3.csv("/data/yelp_data.csv", function(data) {
 				return "rgba(0, 0, 0, 0)";
 			}
 			else {
-				return "rgba(215, " + ratingScale(d.box_rating) + ", 10, 0.7)";
+				return "rgba(215, " + ratingScale(d.box_rating) + ", 10, 0.8)";
 			}
 		})
 		.append("svg:title")
 		.text(function(d) {
-			return "(" + d.sw_longitude + ", " + d.sw_latitude + ")";
-		});
+			return "(" + d.sw_longitude + ", " + d.sw_latitude + ") - " + d.box_rating;
+		}); 
 
-	// Draw golden gate park for reference
-	svg.append("rect")
-		.attr("x", xScale(-122.510392) + xShift)
-		.attr("y", yScale(37.764004) - (-yScale(37.774642) + yScale(37.764004)) + yShift)
-		.attr("width", xScale(-122.454644) - xScale(-122.51022))
-		.attr("height", -yScale(37.774642) + yScale(37.764004))
-		.attr("fill", "rgba(164, 219, 137, 0.5)");
+		// Draw golden gate park for reference
+		/*
+		svg.append("rect")
+			.attr("x", xScale(-122.510392) + xShift)
+			.attr("y", yScale(37.764004) - (-yScale(37.774642) + yScale(37.764004)) + yShift)
+			.attr("width", xScale(-122.454644) - xScale(-122.51022))
+			.attr("height", -yScale(37.774642) + yScale(37.764004))
+			.attr("fill", "rgba(164, 219, 137, 0.5)");
 
-	svg.selectAll("text")
-		.data(data)
-		.enter()
-		.append("text")
-		.text(function(d) {
-			return d.box_rating;
-		})
-		.attr("x", function(d) {
-			return xScale(d.sw_longitude) + xShift;
-		})
-		.attr("y", function(d) {
-			return yScale(d.sw_latitude) + yShift;
-		});
+		svg.selectAll("text")
+			.data(data)
+			.enter()
+			.append("text")
+			.text(function(d) {
+				return d.box_rating;
+			})
+			.attr("x", function(d) {
+				return xScale(d.sw_longitude) + xShift;
+			})
+			.attr("y", function(d) {
+				return yScale(d.sw_latitude) + yShift;
+			});
+			*/
+
+		// Draw the legend
+
+		var ratingKeys = [2, 2.5, 3, 3.5, 4, 4.5]
+
+		svg.selectAll("rectKeys")
+			.data(ratingKeys)
+			.enter()
+			.append("rect")
+			.attr("x", xScale(-122.365771) + xShift)
+			.attr("y", function(d, i) {
+				return yScale(37.788888) + yShift + (30 * i) ;
+			})
+			.attr("height", "30px")
+			.attr("width", "30px")
+			.attr("fill", function(d) {
+				return "rgba(215, " + ratingScale(d) + ", 10, 0.8)";
+			});
+
+		svg.selectAll("rectKeys")
+			.data(ratingKeys)
+			.enter()
+			.append("text")
+			.text(function(d) {
+				return d;
+			})
+			.attr("x", xScale(-122.365771) + xShift + 40)
+			.attr("y", function(d, i) {
+				return yScale(37.788888) + yShift + (30 * i) + 18;
+			});
 });
 
 </script>

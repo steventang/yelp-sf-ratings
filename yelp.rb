@@ -34,10 +34,10 @@ end
 def calculate_box_rating(box)
 	box_total = 0
 	biz = bounding_box_search box
-	# puts "In bounding box #{box} #{'*' * 30}"
-	# output biz
-	biz.each { |b| box_total += b.rating }
-	avg_rating = if biz.length > 1 then box_total/biz.length else 0 end # require sample size of 5 to get a rating
+#	puts "In bounding box #{box} #{'*' * 30}"
+#	output biz
+	biz.each { |b| box_total += b.rating if b.review_count > 9 } # require to have 10 or more reviews to count
+	avg_rating = if biz.count { |b| b.review_count > 9 } > 1 then box_total / biz.count{ |b| b.review_count > 9 } else 0 end # require sample size of 5 to get a rating
 	avg_rating.round(2)
 end
 
