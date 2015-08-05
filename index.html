@@ -14,64 +14,54 @@ text {
 <div id="map"></div>
 <script type="text/javascript">
 
-/* data = d3.csv("/data/yelp_data.csv", function(d) {
-	return {
-		sw_longitude: +d.sw_longitude,
-		sw_lattitude: +d.sw_lattitude,
-		ne_longitude: +d.ne_longitude,
-		ne_lattitude: +d.ne_lattitude,
-		box_rating: +d.box_rating
-	};
-}); */
-
-/* var dataset = d3.csv("/data/yelp_data.csv")
-    .row(function(d) { 
-    	return {
-				sw_longitude: +d.sw_longitude,
-				sw_lattitude: +d.sw_lattitude,
-				ne_longitude: +d.ne_longitude,
-				ne_latitude: +d.ne_latitude,
-				box_rating: +d.box_rating
-			};
-		}); */
-
-var map = new google.maps.Map(d3.select("#map").node(), {
-  zoom: 8,
-  center: new google.maps.LatLng(37.75956, -122.43662),
-  mapTypeId: google.maps.MapTypeId.TERRAIN
-});
-
-var sf_sw_lon = -122.518631;
+var sf_sw_lon = -122.514941;
 var sf_sw_lat = 37.70814;
-var sf_ne_lon = -122.363964;
-var sf_ne_lat = 37.811471;
+var sf_ne_lon = -122.35714;
+var sf_ne_lat = 37.811675;
 
-var svgWidth = (sf_ne_lon - sf_sw_lon) * 10000;
+// a 1/1 lon/lat ratio does not translate to a 1/1 width/height ratio on the screen
+// this var translates the lat/lon ratio into a proportional width/height ratio
+var lat_lon_to_pixels = 1.204694 / 1.567296;
+
+var xPadding = 75;
+// ypadding must be proportional to xpadding as lat is proportional to long, else the padding skews ratio of svg height and width, and skews the scale
+var yPadding = xPadding / lat_lon_to_pixels * ((sf_ne_lat - sf_sw_lat) / (sf_ne_lon - sf_sw_lon));
+var xShift = 5;
+var yShift = 0;
+
+// Want my svg to be proportional to actual lat lon sizes.
+var svgWidth = (sf_ne_lon - sf_sw_lon) * lat_lon_to_pixels * 10000;
 var svgHeight = (sf_ne_lat - sf_sw_lat) * 10000;
-
-var padding = 10;
 
 var xScale = d3.scale.linear()
 	.domain([sf_sw_lon, sf_ne_lon])
-	.range([padding, svgWidth - padding]);
+	.range([xPadding, svgWidth - xPadding]);
 
+// Range is [height, padding] bc svg starts drawing from top left
 var yScale = d3.scale.linear()
 	.domain([sf_sw_lat, sf_ne_lat])
-	.range([svgHeight - padding, padding * 8]);
+	.range([svgHeight - yPadding, yPadding]);
 
+// Scales star rating into a representation of yellow to red color
 var ratingScale = d3.scale.linear()
 	.domain([3, 5])
 	.rangeRound([180, 5]);
 
-	// need to do some sort of scaling for rectangle fill heights and widths too. match the other scales
-
 var svg = d3.select("body")
-    .append("div")
   	.append("svg")
   	.attr("width", svgWidth)
   	.attr("height", svgHeight);
 
+// Draw the map
+var map = svg.append("g")
+	.append("svg:image")
+	.attr("xlink:href", "/data/sf-map.png")
+	.attr("width", svgWidth)
+	.attr("height", svgHeight);
+
+
 d3.csv("/data/yelp_data.csv", function(data) {
+
 	data.forEach(function(d) {
 		d.sw_longitude = +d.sw_longitude;
 		d.sw_latitude = +d.sw_latitude;
@@ -85,10 +75,11 @@ d3.csv("/data/yelp_data.csv", function(data) {
 		.enter()
 		.append("rect")
 		.attr("x", function(d) {
-			return xScale(d.sw_longitude);
+			return xScale(d.sw_longitude) + xShift;
 		})
 		.attr("y", function(d) {
-			return yScale(d.sw_latitude) - (yScale(d.sw_latitude) - yScale(d.ne_latitude));
+			// subtract height of box bc svg draws rect right and down. Now it's drawing right and up.
+			return yScale(d.sw_latitude) - (yScale(d.sw_latitude) - yScale(d.ne_latitude)) + yShift;
 		})
 		.attr("height", function(d) {
 			return yScale(d.sw_latitude) - yScale(d.ne_latitude); // backwards (sw - ne) bc yScale is reversed
@@ -97,12 +88,25 @@ d3.csv("/data/yelp_data.csv", function(data) {
 			return xScale(d.ne_longitude) - xScale(d.sw_longitude);
 		})
 		.attr("fill", function(d) {
-			return "rgba(215, " + ratingScale(d.box_rating) + ", 10, 1.0)";
+			if (d.box_rating == 0) {
+				return "rgba(0, 0, 0, 0)";
+			}
+			else {
+				return "rgba(215, " + ratingScale(d.box_rating) + ", 10, 0.7)";
+			}
 		})
 		.append("svg:title")
 		.text(function(d) {
 			return "(" + d.sw_longitude + ", " + d.sw_latitude + ")";
 		});
+
+	// Draw golden gate park for reference
+	svg.append("rect")
+		.attr("x", xScale(-122.510392) + xShift)
+		.attr("y", yScale(37.764004) - (-yScale(37.774642) + yScale(37.764004)) + yShift)
+		.attr("width", xScale(-122.454644) - xScale(-122.51022))
+		.attr("height", -yScale(37.774642) + yScale(37.764004))
+		.attr("fill", "rgba(164, 219, 137, 0.5)");
 
 	svg.selectAll("text")
 		.data(data)
@@ -112,10 +116,10 @@ d3.csv("/data/yelp_data.csv", function(data) {
 			return d.box_rating;
 		})
 		.attr("x", function(d) {
-			return xScale(d.sw_longitude);
+			return xScale(d.sw_longitude) + xShift;
 		})
 		.attr("y", function(d) {
-			return yScale(d.sw_latitude);
+			return yScale(d.sw_latitude) + yShift;
 		});
 });
 
